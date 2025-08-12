@@ -14,30 +14,52 @@ export interface CustomeResponse {
   count: number
 }
 
-export type CustomerFilters = {
+export type CustomerBaseFilter = {
   name?: string;
   email?: string;
+};
+
+export type CustomerFilters = CustomerBaseFilter & {
   currentPage: number;
   itemsPerPage: number;
 };
 
+
+
 export const fetchCustomers = async (filters: CustomerFilters): Promise<CustomeResponse> => {
   const params = new URLSearchParams();
-    if(filters){
-        if (filters.name) {
-            params.append('name', filters.name);
-        }
-        if (filters.email) {
-            params.append('email', filters.email);
-        }
-        params.append('currentPage', filters.currentPage + "");
-        params.append('itemsPerPage', filters.itemsPerPage + "");
+  if (filters) {
+    if (filters.name) {
+      params.append('name', filters.name);
     }
+    if (filters.email) {
+      params.append('email', filters.email);
+    }
+    params.append('currentPage', filters.currentPage + "");
+    params.append('itemsPerPage', filters.itemsPerPage + "");
+  }
 
-    const response = await  fetch(`/api/customers/list?${params.toString()}`);
-    if (!response.ok) {
-        throw new Error('Error when fetching cusotmers');
-    }
-    return response.json();
+  const response = await fetch(`/api/customers/list?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Error when fetching cusotmers');
+  }
+  return response.json();
 };
+
+export const fetchXmlCustomers = async (filters: CustomerBaseFilter): Promise<Blob> => {
+const params = new URLSearchParams();
+  if (filters) {
+    if (filters.name) {
+      params.append('name', filters.name);
+    }
+    if (filters.email) {
+      params.append('email', filters.email);
+    }
+  }
+  const response = await fetch(`/api/customers/exportAsXml?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Error when fetching cusotmers');
+  }
+  return response.blob();
+}
 
