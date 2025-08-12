@@ -8,6 +8,7 @@ export function useCustomers(filters: CustomerFilters) {
   const [data, setData] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [count, setCount] = useState<number>(0);
 
   useEffect(() => {
     
@@ -15,8 +16,9 @@ export function useCustomers(filters: CustomerFilters) {
       setIsLoading(true);
       setError(null);
       try {
-        const customers = await fetchCustomers(filters);
-        setData(customers);
+        const {customers : resCustomers, count: resCount} = await fetchCustomers(filters);
+        setData(resCustomers);
+        setCount(resCount);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknow error!');
         setData([]);
@@ -28,8 +30,8 @@ export function useCustomers(filters: CustomerFilters) {
     
     getCustomers();
     
-  }, [filters.name, filters.email]); 
+  }, [filters.name, filters.email, filters.currentPage, filters.itemsPerPage]); 
 
 
-  return { data, isLoading, error };
+  return { data, isLoading, error, count };
 }

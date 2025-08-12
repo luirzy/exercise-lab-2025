@@ -4,8 +4,11 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  Stack,
   TableHead,
   CircularProgress,
+  TableFooter,
+  TablePagination,
   Box,
   TextField,
   TableRow,
@@ -22,20 +25,35 @@ export default function CustomerListPage() {
 
   const [nameFilter, setNameFilter] = useState("");
   const [emailFilter, setEmailFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const debouncedNameFilter = useDebounce(nameFilter, 500);
   const debouncedEmailFilter = useDebounce(emailFilter, 500);
+  
+    
+  const {data: customers, isLoading,error, count} = 
+  useCustomers({ name: debouncedNameFilter, email: debouncedEmailFilter, currentPage,  itemsPerPage});
 
-  const {data: customers, isLoading,error} = useCustomers({ name: debouncedNameFilter, email: debouncedEmailFilter });
 
-
-  const updateFilterHandler = (event) => {
+  const updateFilterHandler = (event : React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.target.name === "name") {
       setNameFilter(event.target.value);
     } else {
       setEmailFilter(event.target.value);
     }
+    setCurrentPage(0);
   };
+
+  const pageChangeHandler = (event, newPage : number) => {
+      setCurrentPage(newPage);
+  };
+
+  const rowPerPageChangedHandler = (event : React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setItemsPerPage(parseInt(event.target.value, 10));
+    setCurrentPage(0); //to avoid exception index out of boud
+  };
+
 
   return (
     <>
@@ -68,7 +86,9 @@ export default function CustomerListPage() {
         />
       </Box>
 
-      {isLoading && <CircularProgress />}
+      {isLoading && <Stack alignItems="center">
+                    <CircularProgress />
+                  </Stack>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {!error && !isLoading && customers.length === 0 && (
@@ -106,6 +126,19 @@ export default function CustomerListPage() {
                 </TableRow>
               ))}
             </TableBody>
+            <TableFooter>
+            <TableRow>
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                colSpan={3}
+                count={count}
+                rowsPerPage={itemsPerPage}
+                page={currentPage}
+                onPageChange={pageChangeHandler}
+                onRowsPerPageChange={rowPerPageChangedHandler}
+              />
+            </TableRow>
+          </TableFooter>
           </Table>
         </TableContainer>
       )}

@@ -1,9 +1,12 @@
 namespace Backend.Features.Customers;
 
-public class CustomersListQuery : IRequest<List<Customer>>
+public class CustomersListQuery : IRequest<CustomeResponse>
 {
     public string? Name { get; set; }
     public string? Email { get; set; }
+
+    public int CurrentPage { get; set; }
+    public int ItemsPerPage { get; set; }
 }
 
 
@@ -19,13 +22,19 @@ public class Customer
     public string CategoryDescription { get; set; } = "";
 }
 
+public class CustomeResponse
+{
+    public List<Customer> Customers { get; set; } = [];
+    public long Count { get; set; }
+}
 
 
-internal class CustomersListQueryHandler(BackendContext context) : IRequestHandler<CustomersListQuery, List<Customer>>
+
+internal class CustomersListQueryHandler(BackendContext context) : IRequestHandler<CustomersListQuery, CustomeResponse>
 {
     private readonly BackendContext context = context;
 
-    public async Task<List<Customer>> Handle(CustomersListQuery request, CancellationToken cancellationToken)
+    public async Task<CustomeResponse> Handle(CustomersListQuery request, CancellationToken cancellationToken)
     {
         var query = context.Customers.AsQueryable();
         if (!string.IsNullOrEmpty(request.Name))
@@ -38,7 +47,14 @@ internal class CustomersListQueryHandler(BackendContext context) : IRequestHandl
         }
         query = query.Include(c => c.CustomerCategory);
 
-        var data = await query.OrderBy(q => q.Name).ThenBy(q => q.Name).ToListAsync(cancellationToken);
+        var totalItems = await query.CountAsync(cancellationToken);
+
+        var startIndex = (request.CurrentPage - 1) * request.ItemsPerPage;
+
+        var data = await query.OrderBy(q => q.Name).ThenBy(q => q.Name)
+        .Skip(startIndex)
+        .Take(request.ItemsPerPage)
+        .ToListAsync(cancellationToken);
         var result = new List<Customer>();
 
         foreach (var item in data)
@@ -62,6 +78,11 @@ internal class CustomersListQueryHandler(BackendContext context) : IRequestHandl
             result.Add(resultItem);
         }
 
-        return result;
+        return new CustomeResponse
+        {
+            Customers = result,
+            Count = totalItems
+        };
+        
     }
 }
