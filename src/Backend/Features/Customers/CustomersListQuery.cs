@@ -1,13 +1,13 @@
 namespace Backend.Features.Customers;
 
-public class CustomersListQuery : IRequest<List<CustomerListQueryResponse>>
+public class CustomersListQuery : IRequest<List<Customer>>
 {
     public string? Name { get; set; }
     public string? Email { get; set; }
 }
 
 
-public class CustomerListQueryResponse
+public class Customer
 {
     public int Id { get; set; }
     public string Name { get; internal set; } = "";
@@ -21,11 +21,11 @@ public class CustomerListQueryResponse
 
 
 
-internal class CustomersListQueryHandler(BackendContext context) : IRequestHandler<CustomersListQuery, List<CustomerListQueryResponse>>
+internal class CustomersListQueryHandler(BackendContext context) : IRequestHandler<CustomersListQuery, List<Customer>>
 {
     private readonly BackendContext context = context;
 
-    public async Task<List<CustomerListQueryResponse>> Handle(CustomersListQuery request, CancellationToken cancellationToken)
+    public async Task<List<Customer>> Handle(CustomersListQuery request, CancellationToken cancellationToken)
     {
         var query = context.Customers.AsQueryable();
         if (!string.IsNullOrEmpty(request.Name))
@@ -39,11 +39,11 @@ internal class CustomersListQueryHandler(BackendContext context) : IRequestHandl
         query = query.Include(c => c.CustomerCategory);
 
         var data = await query.OrderBy(q => q.Name).ThenBy(q => q.Name).ToListAsync(cancellationToken);
-        var result = new List<CustomerListQueryResponse>();
+        var result = new List<Customer>();
 
         foreach (var item in data)
         {
-            var resultItem = new CustomerListQueryResponse
+            var resultItem = new Customer
             {
                 Id = item.Id,
                 Name = item.Name,
