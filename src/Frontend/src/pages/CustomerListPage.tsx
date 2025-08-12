@@ -18,42 +18,64 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useDebounce } from "../util/useDebounce";
+import { CustomerFilters } from "../api/customerApi";
 import { useCustomers } from "../hooks/use-customers";
+
+const defaultFilter: CustomerFilters = {
+  currentPage: 0,
+  itemsPerPage: 10,
+};
 
 export default function CustomerListPage() {
   // const [customers, setCustomers] = useState<Customer[]>([]);
 
-  const [nameFilter, setNameFilter] = useState("");
-  const [emailFilter, setEmailFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [filter, setFilter] = useState(defaultFilter);
+  // const [emailFilter, setEmailFilter] = useState("");
+  // const [currentPage, setCurrentPage] = useState(0);
+  // const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const debouncedNameFilter = useDebounce(nameFilter, 500);
-  const debouncedEmailFilter = useDebounce(emailFilter, 500);
-  
-    
-  const {data: customers, isLoading,error, count} = 
-  useCustomers({ name: debouncedNameFilter, email: debouncedEmailFilter, currentPage,  itemsPerPage});
+  const debouncedFilter = useDebounce(filter, 500);
+  // const debouncedEmailFilter = useDebounce(emailFilter, 500);
 
+  const {
+    data: customers,
+    isLoading,
+    error,
+    count,
+  } = useCustomers(debouncedFilter);
 
-  const updateFilterHandler = (event : React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (event.target.name === "name") {
-      setNameFilter(event.target.value);
-    } else {
-      setEmailFilter(event.target.value);
-    }
-    setCurrentPage(0);
+  const updateFilterHandler = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFilter((prevState) => {
+      const newState = { ...prevState};
+      if (event.target.name === "name") {
+        newState.name = event.target.value;
+      } else {
+        newState.email = event.target.value;
+      }
+      newState.currentPage = 0;
+
+      return newState;
+    });
   };
 
-  const pageChangeHandler = (event, newPage : number) => {
-      setCurrentPage(newPage);
+  const pageChangeHandler = (event, newPage: number) => {
+     setFilter((prevState) => {
+      const newState = { ...prevState, currentPage: newPage};
+      return newState;
+    });
   };
 
-  const rowPerPageChangedHandler = (event : React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setItemsPerPage(parseInt(event.target.value, 10));
-    setCurrentPage(0); //to avoid exception index out of boud
-  };
+  const rowPerPageChangedHandler = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
 
+    setFilter((prevState) => {
+      const newState = { ...prevState, currentPage: 0, itemsPerPage: parseInt(event.target.value, 10)};
+      return newState;
+    });
+  };
 
   return (
     <>
@@ -72,7 +94,7 @@ export default function CustomerListPage() {
         <TextField
           name="name"
           label="Filter by name"
-          value={nameFilter}
+          value={filter.name}
           onChange={updateFilterHandler}
           fullWidth
         />
@@ -80,16 +102,18 @@ export default function CustomerListPage() {
           name="email"
           label="Filter by email"
           variant="outlined"
-          value={emailFilter}
+          value={filter.email}
           onChange={updateFilterHandler}
           fullWidth
         />
       </Box>
 
-      {isLoading && <Stack alignItems="center">
-                    <CircularProgress />
-                  </Stack>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {isLoading && (
+        <Stack alignItems="center">
+          <CircularProgress />
+        </Stack>
+      )}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {!error && !isLoading && customers.length === 0 && (
         <Typography variant="h6" color="text.primary" sx={{ p: 2 }}>
@@ -127,18 +151,18 @@ export default function CustomerListPage() {
               ))}
             </TableBody>
             <TableFooter>
-            <TableRow>
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                colSpan={3}
-                count={count}
-                rowsPerPage={itemsPerPage}
-                page={currentPage}
-                onPageChange={pageChangeHandler}
-                onRowsPerPageChange={rowPerPageChangedHandler}
-              />
-            </TableRow>
-          </TableFooter>
+              <TableRow>
+                <TablePagination
+                  rowsPerPageOptions={[5, 10, 25]}
+                  colSpan={3}
+                  count={count}
+                  rowsPerPage={filter.itemsPerPage}
+                  page={filter.currentPage}
+                  onPageChange={pageChangeHandler}
+                  onRowsPerPageChange={rowPerPageChangedHandler}
+                />
+              </TableRow>
+            </TableFooter>
           </Table>
         </TableContainer>
       )}
